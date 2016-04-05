@@ -1,0 +1,506 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Comment (ne pas) calculer la suite de Fibonacci en Python\n",
+    "\n",
+    "*Auteur :* [Antoine Meyer](http://igm.univ-mlv.fr/~ameyer/)\n",
+    "\n",
+    "Atelier organisé au cours de la journée de formation [Le calcul sous toutes ses formes, du lycée à l'université](http://zitt.perso.math.cnrs.fr/journee_formation.html), 14 janvier 2016. Université Paris Est - Marne-la-Vallée.\n",
+    "\n",
+    "## Objectif\n",
+    "\n",
+    "L’objectif de cette activité **n'est pas** d'étudier la suite de Fibonacci, mais plutôt d’implémenter plusieurs algorithmes de calcul du $n$-ème terme de cette suite, et de les comparer entre eux (notamment leur complexité algorithmique “théorique” et leur performance en pratique). On verra au passage que se posent plusieurs problèmes de temps de calcul et de fiabilité des résultats.\n",
+    "\n",
+    "### Table des matières\n",
+    "\n",
+    "* [Algorithmes simples](#Algorithmes-simples)\n",
+    "* [Passage par les nombres flottants](#Passage-par-les-nombres-flottants)\n",
+    "* [Passage par le calcul matriciel](#Passage-par-le-calcul-matriciel)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Algorithmes simples\n",
+    "\n",
+    "Dans cette première partie, nous allons étudier les algorithmes les plus simples permettant de calculer un terme de rang donné de la suite de Fibonacci, et discuter leur complexité. On rappelle avant tout la définition de la suite de Fibonacci : \n",
+    "\n",
+    "\\begin{cases}\n",
+    "  f_0 = 0,\\\\\n",
+    "  f_1 = 1,\\\\\n",
+    "  f_n = f_{n-1}+f_{n-2} \\text{ pour } n \\geq 2.\n",
+    "\\end{cases}\n",
+    "\n",
+    "### Calcul naïf\n",
+    "\n",
+    "> **Question :** En appliquant directement la définition de la suite de Fibonacci, écrivons une fonction *récursive* calculant le terme $f_n$. \n",
+    "> \n",
+    "> *Indication :* cette fonction doit effectuer deux appels récursifs."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "def fibo_naif(n):\n",
+    "    if ...:\n",
+    "        return ...\n",
+    "    else:\n",
+    "        return ...\n",
+    "\n",
+    "print(fibo_naif(1))\n",
+    "print(fibo_naif(6))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** Expérimentez un peu avec cette fonction. Essayez de calculer $f_n$ pour des valeurs croissantes de $n$. Qu'observez-vous ? Déterminez l'ordre de grandeur du plus grand rang $n$ tel qu'on puisse calculer en environ une seconde le terme $f_n$ à l'aide de cette fonction."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Essayons de comprendre pourquoi ce calcul est aussi inefficace. On se doute vaguement que le fait que `fibo_naif(n)` s'appelle elle-même deux fois pour calculer le résultat risque de provoquer beaucoup de calculs, mais combien exactement ?\n",
+    "\n",
+    "> **Question :** Modifiez la fonction `fibo_naif` afin qu'elle renvoie, en plus de son résultat, le nombre d'additions effectuées pour le calculer.\n",
+    "> \n",
+    "> *Indication :* on peut renvoyer deux valeurs `a` et `b` en écrivant dans une fonction `return a, b`. Si une fonction renvoie deux résultats, on peut également les récupérer en écrivant par exemple `x, y = ma_fonction(...)`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "def fibo_naif_comptage(n):\n",
+    "    if ...:\n",
+    "        return n, 0\n",
+    "    n1, cpt1 = fibo_naif_comptage(n - 1)\n",
+    "    ...\n",
+    "    return ...\n",
+    "\n",
+    "print(fibo_naif_comptage(10))\n",
+    "print(fibo_naif_comptage(20))\n",
+    "print(fibo_naif_comptage(30))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Algorithme récursif efficace.\n",
+    "\n",
+    "En modifiant la fonction pour qu'elle calcule simultanément $f_n$ et $f_{n-1}$, on peut rendre le calcul bien plus efficace. En effet, si ces deux termes sont connus, il est très simple de calculer $f_{n+1}$.\n",
+    "\n",
+    "> **Question :** Modifiez la fonction précédente pour qu'un appel avec le paramètre $n$ renvoie le couple d'entiers $(f_n, f_{n-1})$."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "def fibo_rec(n):\n",
+    "    if ...:\n",
+    "        return n, 0\n",
+    "    dern, av_dern = ...\n",
+    "    return ...\n",
+    "\n",
+    "print(fibo_rec(1))\n",
+    "print(fibo_rec(6))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** Que pensez-vous de l'efficacité de cette fonction par rapport à la fonction naïve ? Essayez de déterminer l'ordre de grandeur du plus grand rang $n$ tel qu'on puisse calculer en environ une seconde le terme $f_n$ à l'aide de cette fonction. Que constatez-vous ?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** Combien d'additions l'appel `fibo_rec(n)` effectue-t-il ?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Algorithme itératif\n",
+    "\n",
+    "On veut implémenter la même idée que dans la solution précédente, mais cette fois de manière itérative. À l’aide de deux variables, on mémorisera à tout moment les valeurs des *deux* derniers termes connus de la suite.\n",
+    "\n",
+    "> **Question :** Implémentez une fonction selon cette idée, et vérifiez les résultats des calculs en les comparant à ceux des fonctions précédentes."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "def fibo_iter(n):\n",
+    "    if ...:\n",
+    "        return n\n",
+    "    ...\n",
+    "    for rang in range(2, n):\n",
+    "        ...\n",
+    "    return ...\n",
+    "\n",
+    "print(fibo_iter(10))\n",
+    "print(fibo_iter(20))\n",
+    "print(fibo_iter(30))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** essayez de calculer $f_n$ grâce à cette fonction pour diverses valeurs de $n$. Qu'observez-vous ?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Passage par les nombres flottants\n",
+    "\n",
+    "Avant de pouvoir implémenter une fonction de calcul de la suite de Fibonacci à l’aide des nombres flottants, nous nous dotons de plusieurs fonctions calculant la puissance entière d’un nombre flottant.\n",
+    "\n",
+    "### Calcul de puissances\n",
+    "\n",
+    "On souhaite écrire une fonction calculant une valeur proche de $a^n$ pour un nombre réel $a$ et un nombre entier positif $n$ donnés. Pour cela, on se munit des définitions suivantes de $a^n$ :\n",
+    "\n",
+    "- Définition 1 : \n",
+    "\n",
+    "  $a^n=\\begin{cases}\n",
+    "    a*a^{n-1} & \\mbox{ si $n>0$},\\\\\n",
+    "    1 & \\mbox{ si $n=0$}.\n",
+    "  \\end{cases}$\n",
+    "\n",
+    "- Définition 2 (où $\\lfloor x \\rfloor$ désigne la partie entière de $x$) : \n",
+    "\n",
+    "  $a^n=\\begin{cases}\n",
+    "    (a^{\\lfloor n/2\\rfloor})^2      & \\mbox{ si $n>0$ est pair},\\\\\n",
+    "    a*(a^{\\lfloor n/2\\rfloor})^2 & \\mbox{ si $n$ est impair},\\\\\n",
+    "    1 & \\mbox{ si $n=0$}.\n",
+    "  \\end{cases}$\n",
+    "\n",
+    "> **Question :** Programmez deux fonctions implémentant chacune de ces deux définitions, puis évaluez leur complexité asymptotique."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "def puissance_lente(a, n):\n",
+    "    ...\n",
+    "\n",
+    "def puissance_rapide(a, n):\n",
+    "    ..."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Fibonacci par les flottants\n",
+    "\n",
+    "On peut donner une expression *fonctionnelle* du terme $f_n$ (c’est-à-dire non récursive mais dépendant uniquement de $n$) par une analyse mathématique de la suite. En résolvant le polynôme caractéristique de cette suite (récurrente d’ordre 2), on peut déterminer que ses termes sont de la forme \n",
+    "\n",
+    "$$\n",
+    "f_n = \\frac{1}{\\sqrt{5}} (\\varphi^n - {\\varphi'}^n) \\qquad \\text{ avec } \\qquad \\varphi = \\frac{1 + \\sqrt{5}}{2} \\quad \\text{et} \\quad \\varphi' = \\frac{1 - \\sqrt{5}}{2}.\n",
+    "$$\n",
+    "  \n",
+    "(Vous avez reconnu $\\varphi$, le *nombre d’or*.)\n",
+    "\n",
+    "Comme $\\varphi^n$ tend vers $+\\infty$ et $\\varphi'^n$ vers 0 quand $n$ tend vers $+\\infty$, le second terme de cette expression devient négligeable à partir d’un certain rang (en fait dès $n = 1$), et on peut calculer $f_n$ simplement en arrondissant $\\frac{1}{\\sqrt{5}} \\varphi^n$ à l’entier le plus proche. Cela nous fournit un nouveau moyen pour calculer $f_n$ efficacement.\n",
+    "\n",
+    "> **Question :** Implémentez deux versions de cet algorithme, l'une utilisant la fonction `puissance_lente`, la seconde `puissance_rapide`. Quelle est d'après vous leur complexité algorithmique ? D'après vous, ces fonctions présentent-elles toutes les deux un gain en efficacité par rapport à la fonction `fibo_iter` ?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "from math import sqrt\n",
+    "\n",
+    "def fibo_phi_lent(n):\n",
+    "    ...\n",
+    "\n",
+    "print(fibo_phi_lent(10))\n",
+    "print(fibo_phi_lent(20))\n",
+    "print(fibo_phi_lent(30))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "def fibo_phi_rapide(n):\n",
+    "    ...\n",
+    "\n",
+    "print(fibo_phi_rapide(10))\n",
+    "print(fibo_phi_rapide(20))\n",
+    "print(fibo_phi_rapide(30))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Tout a l'air de bien se passer, mais nous n'avons pas encore une idée claire des différences d'efficacité entre ces deux fonctions. Pour tenter d'y voir plus clair, calculons les résultats obtenus pour des valeurs plus grandes de $n$.\n",
+    "\n",
+    "> **Question :** Calculez à l'aide de ces deux fonctions, ainsi qu'avec la fonction `fibo_iter`, le terme $f_{10\\,000}$. Quel problème constatez-vous ? À quel rang $n$ ce problème apparait-il ?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** Calculez à l'aide de ces deux fonctions, ainsi qu'avec la fonction `fibo_iter`, le terme $f_{100}$. Quel problème constatez-vous ? À quel rang $n$ ce problème apparait-il ?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Passage par le calcul matriciel\n",
+    "\n",
+    "On a vu que le passage par les nombres flottants, malgré une performance très bonne, posait d’autres problèmes. Comment faire pour calculer $f_n$ avec précision pour une grande valeur de $n$ ?\n",
+    "\n",
+    "La définition de la suite de Fibonacci peut se reformuler selon l'équation matricielle suivante pour $n \\geq 2$ :\n",
+    "\n",
+    "$$\\left(\\begin{array}{c}f_{n}\\\\f_{n-1}\\end{array} \\right) = \n",
+    "  \\left(\\begin{array}[c]{cc}\n",
+    "      1 & 1\\\\\n",
+    "      1 & 0\n",
+    "    \\end{array}\\right) \\times\n",
+    "  \\left(\\begin{array}{c}f_{n-1}\\\\f_{n-2}\\end{array} \\right)\n",
+    "$$\n",
+    "\n",
+    "où on a bien sûr toujours $f_0 = 0$ et $f_1 = 1$. On peut facilement en déduire l’égalité suivante (toujours pour $n \\geq 2$) : \n",
+    "\n",
+    "$$\n",
+    "\\left(\\begin{array}[c]{cc}\n",
+    "      1 & 1\\\\\n",
+    "      1 & 0\n",
+    "    \\end{array}\\right)^{n-1}\n",
+    "  =\\ \\  \n",
+    "  \\left(\\begin{array}[c]{cc}\n",
+    "      f_n & f_{n-1}\\\\\n",
+    "      f_{n-1} & f_{n-2}\n",
+    "    \\end{array}\\right)$$\n",
+    "\n",
+    "En Python, manipuler une matrice peut se faire à l'aide de listes imbriquées (ou listes de listes). Par exemple, la matrice ci-dessus peut s'écrire `[[1,1],[1,0]]`. D'autre part, pour récupérer ou modifier la valeur de l'élément $(i, j)$ (ligne $i$, colonne $j$) de la matrice, on écrira : `m[i][j]` (`j`-ème élément de la `i`-ème liste).\n",
+    "\n",
+    "La fonction ci-dessous (qui vous est donnée) calcule la matrice produit de deux matrices carrées de dimension 2."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "def produit_2x2(m1, m2):\n",
+    "    return [[m1[0][0] * m2[0][0] + m1[0][1] * m2[1][0], \n",
+    "             m1[0][0] * m2[0][1] + m1[0][1] * m2[1][1]],\n",
+    "            [m1[1][0] * m2[0][0] + m1[1][1] * m2[1][0], \n",
+    "             m1[1][0] * m2[0][1] + m1[1][1] * m2[1][1]]]\n",
+    "\n",
+    "print(produit_2x2([[1,1],[1,0]],[[1,1],[1,0]]))\n",
+    "print(produit_2x2([[2,1],[1,1]],[[1,1],[1,0]]))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** À l’aide de cette fonction, écrivez une fonction calculant la puissance $n$-ème *rapide* de la matrice $2 \\times 2$ . *On rappelle que* :\n",
+    "\n",
+    "$$\n",
+    "\\left(\n",
+    "    \\begin{array}[c]{cc}\n",
+    "      a & b\\\\\n",
+    "      c & d\n",
+    "    \\end{array}\n",
+    "\\right)^0\n",
+    "=\\ \n",
+    "  \\left(\n",
+    "    \\begin{array}[c]{cc}\n",
+    "      1 & 0\\\\\n",
+    "      0 & 1\n",
+    "    \\end{array}\n",
+    "  \\right).\n",
+    "$$"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "def puissance_2x2(mat, n):\n",
+    "    ..."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** À l’aide de cette fonction, écrivez une fonction calculant $f_n$."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "def fibo_mat(n):\n",
+    "    ..."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** Comparez les résultats et les performances de cette fonction avec les précédentes. À partir de quel rang la fonction est-elle plus rapide que la fonction `fibo_iter` ?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** Exprimez la complexité asymptotique de cette fonction. Comment expliquez-vous que ses performances en pratique soient à ce point pires que toutes les autres fonctions ?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.4.3+"
+  },
+  "name": "fibonacci.ipynb"
+ },
+ "nbformat": 4,
+ "nbformat_minor": 0
+}

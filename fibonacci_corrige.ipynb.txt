@@ -1,0 +1,883 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Comment (ne pas) calculer la suite de Fibonacci en Python\n",
+    "\n",
+    "*Auteur :* [Antoine Meyer](http://igm.univ-mlv.fr/~ameyer/)\n",
+    "\n",
+    "Atelier organisé au cours de la journée de formation [Le calcul sous toutes ses formes, du lycée à l'université](http://zitt.perso.math.cnrs.fr/journee_formation.html), 14 janvier 2016. Université Paris Est - Marne-la-Vallée.\n",
+    "\n",
+    "## Objectif\n",
+    "\n",
+    "L’objectif de cette activité **n'est pas** d'étudier la suite de Fibonacci, mais plutôt d’implémenter plusieurs algorithmes de calcul du $n$-ème terme de cette suite, et de les comparer entre eux (notamment leur complexité algorithmique “théorique” et leur performance en pratique). On verra au passage que se posent plusieurs problèmes de temps de calcul et de fiabilité des résultats.\n",
+    "\n",
+    "### Table des matières\n",
+    "\n",
+    "* [Algorithmes simples](#Algorithmes-simples)\n",
+    "* [Passage par les nombres flottants](#Passage-par-les-nombres-flottants)\n",
+    "* [Passage par le calcul matriciel](#Passage-par-le-calcul-matriciel)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Algorithmes simples\n",
+    "\n",
+    "Dans cette première partie, nous allons étudier les algorithmes les plus simples permettant de calculer un terme de rang donné de la suite de Fibonacci, et discuter leur complexité. On rappelle avant tout la définition de la suite de Fibonacci : \n",
+    "\n",
+    "\\begin{cases}\n",
+    "  f_0 = 0,\\\\\n",
+    "  f_1 = 1,\\\\\n",
+    "  f_n = f_{n-1}+f_{n-2} \\text{ pour } n \\geq 2.\n",
+    "\\end{cases}\n",
+    "\n",
+    "### Calcul naïf\n",
+    "\n",
+    "> **Question :** En appliquant directement la définition de la suite de Fibonacci, écrivons une fonction *récursive* calculant le terme $f_n$. \n",
+    "> \n",
+    "> *Indication :* cette fonction doit effectuer deux appels récursifs."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "1\n",
+      "8\n"
+     ]
+    }
+   ],
+   "source": [
+    "def fibo_naif(n):\n",
+    "    if n < 2:\n",
+    "        return n\n",
+    "    else:\n",
+    "        return fibo_naif(n - 1) + fibo_naif(n - 2)\n",
+    "\n",
+    "print(fibo_naif(1))\n",
+    "print(fibo_naif(6))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** Expérimentez un peu avec cette fonction. Essayez de calculer $f_n$ pour des valeurs croissantes de $n$. Qu'observez-vous ? Déterminez l'ordre de grandeur du plus grand rang $n$ tel qu'on puisse calculer en environ une seconde le terme $f_n$ à l'aide de cette fonction."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "0 0\n",
+      "1 1\n",
+      "2 1\n",
+      "3 2\n",
+      "4 3\n",
+      "5 5\n",
+      "6 8\n",
+      "7 13\n",
+      "8 21\n",
+      "9 34\n",
+      "10 55\n",
+      "11 89\n",
+      "12 144\n",
+      "13 233\n",
+      "14 377\n",
+      "15 610\n",
+      "16 987\n",
+      "17 1597\n",
+      "18 2584\n",
+      "19 4181\n",
+      "20 6765\n",
+      "21 10946\n",
+      "22 17711\n",
+      "23 28657\n",
+      "24 46368\n",
+      "25 75025\n",
+      "26 121393\n",
+      "27 196418\n",
+      "28 317811\n",
+      "29 514229\n",
+      "30 832040\n",
+      "31 1346269\n",
+      "32 2178309\n",
+      "33 3524578\n",
+      "34\n"
+     ]
+    }
+   ],
+   "source": [
+    "from time import time\n",
+    "\n",
+    "n = 0\n",
+    "duree = 0\n",
+    "while duree < 1:\n",
+    "    debut = time()\n",
+    "    print(n, fibo_naif(n))\n",
+    "    duree = time() - debut\n",
+    "    n = n+1\n",
+    "print(n)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Essayons de comprendre pourquoi ce calcul est aussi inefficace. On se doute vaguement que le fait que `fibo_naif(n)` s'appelle elle-même deux fois pour calculer le résultat risque de provoquer beaucoup de calculs, mais combien exactement ?\n",
+    "\n",
+    "> **Question :** Modifiez la fonction `fibo_naif` afin qu'elle renvoie, en plus de son résultat, le nombre d'additions effectuées pour le calculer.\n",
+    "> \n",
+    "> *Indication :* on peut renvoyer deux valeurs `a` et `b` en écrivant dans une fonction `return a, b`. Si une fonction renvoie deux résultats, on peut également les récupérer en écrivant par exemple `x, y = ma_fonction(...)`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(55, 88)\n",
+      "(6765, 10945)\n",
+      "(832040, 1346268)\n"
+     ]
+    }
+   ],
+   "source": [
+    "def fibo_naif_comptage(n):\n",
+    "    if n < 2:\n",
+    "        return n, 0\n",
+    "    n1, cpt1 = fibo_naif_comptage(n - 1)\n",
+    "    n2, cpt2 = fibo_naif_comptage(n - 2)\n",
+    "    return n1 + n2, cpt1 + cpt2 + 1\n",
+    "\n",
+    "print(fibo_naif_comptage(10))\n",
+    "print(fibo_naif_comptage(20))\n",
+    "print(fibo_naif_comptage(30))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "*Commentaire : on peut définir une suite récurrente $A(n)$ exprimant le nombre total d'additions effectuées par l'appel `fibo_naif(n)`. On a $A(0) = A(1) = 0$, et $A(n) = A(n-1) + A(n-2) + 1$. Notons que cette suite croît plus vite que la suite de Fibonacci elle-même, dont on donnera une expression du terme général (exponentiel en $n$) plus loin. Ce coût de calcul (appelé aussi *complexité algorithmique*) est prohibitif. Cette solution simpliste est donc **à proscrire**.*"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Algorithme récursif efficace.\n",
+    "\n",
+    "En modifiant la fonction pour qu'elle calcule simultanément $f_n$ et $f_{n-1}$, on peut rendre le calcul bien plus efficace. En effet, si ces deux termes sont connus, il est très simple de calculer $f_{n+1}$.\n",
+    "\n",
+    "> **Question :** Modifiez la fonction précédente pour qu'un appel avec le paramètre $n$ renvoie le couple d'entiers $(f_n, f_{n-1})$."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(1, 0)\n",
+      "(8, 5)\n"
+     ]
+    }
+   ],
+   "source": [
+    "def fibo_rec(n):\n",
+    "    if n < 2:\n",
+    "        return n, 0\n",
+    "    n1, n2 = fibo_rec(n - 1)\n",
+    "    return n1 + n2, n1\n",
+    "\n",
+    "print(fibo_rec(1))\n",
+    "print(fibo_rec(6))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** Que pensez-vous de l'efficacité de cette fonction par rapport à la fonction naïve ? Essayez de déterminer l'ordre de grandeur du plus grand rang $n$ tel qu'on puisse calculer en environ une seconde le terme $f_n$ à l'aide de cette fonction. Que constatez-vous ?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "0.0001556873321533203\n"
+     ]
+    }
+   ],
+   "source": [
+    "debut = time()\n",
+    "terme = fibo_rec(34)  # essayez un rang plus grand !\n",
+    "print(time() - debut)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "*Commentaire : le problème ici est la limite de la profondeur de récursion autorisée (par défaut) par Python. On peut fixer une limite plus élevée, dans la limite de la mémoire disponible, ce qui permettrait de calculer $f_n$ en moins d'une seconde pour un rang bien plus élevé. Néanmoins, dans l'environnement présent, il est impossible d'atteindre une valeur suffisamment grande de $n$ pour atteindre une seconde de calcul sans faire planter l'exécution.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "0.008986234664916992\n"
+     ]
+    }
+   ],
+   "source": [
+    "from sys import setrecursionlimit\n",
+    "setrecursionlimit(10000)\n",
+    "\n",
+    "debut = time()\n",
+    "terme = fibo_rec(9000)  # essayez un rang plus grand !\n",
+    "print(time() - debut)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** Combien d'additions l'appel `fibo_rec(n)` effectue-t-il ?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "*Il en effectue exactement $n-1$. On peut, pour s'en convaincre, \"instrumenter\" le code de la fonction `fibo_rec` :*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(55, 34, 9)\n",
+      "(6765, 4181, 19)\n",
+      "(832040, 514229, 29)\n"
+     ]
+    }
+   ],
+   "source": [
+    "def fibo_rec_comptage(n):\n",
+    "    if n < 2:\n",
+    "        return n, 0, 0\n",
+    "    n1, n2, cpt = fibo_rec_comptage(n - 1)\n",
+    "    return n1 + n2, n1, cpt + 1\n",
+    "\n",
+    "print(fibo_rec_comptage(10))\n",
+    "print(fibo_rec_comptage(20))\n",
+    "print(fibo_rec_comptage(30))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Algorithme itératif\n",
+    "\n",
+    "On veut implémenter la même idée que dans la solution précédente, mais cette fois de manière itérative. À l’aide de deux variables, on mémorisera à tout moment les valeurs des *deux* derniers termes connus de la suite.\n",
+    "\n",
+    "> **Question :** Implémentez une fonction selon cette idée, et vérifiez les résultats des calculs en les comparant à ceux des fonctions précédentes."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "55\n",
+      "6765\n",
+      "832040\n"
+     ]
+    }
+   ],
+   "source": [
+    "def fibo_iter(n):\n",
+    "    if n < 2:\n",
+    "        return n\n",
+    "    prec, cour = 1, 1\n",
+    "    for rang in range(2, n):\n",
+    "        prec, cour = cour, prec + cour\n",
+    "    return cour\n",
+    "\n",
+    "print(fibo_iter(10))\n",
+    "print(fibo_iter(20))\n",
+    "print(fibo_iter(30))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "*Les résultats sont corrects pour les valeurs essayées, et le calcul semble quasi-instantané.*"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** essayez de calculer $f_n$ grâce à cette fonction pour diverses valeurs de $n$. Qu'observez-vous ?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "a = fibo_iter(10000)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "*Commentaires :* on peut mener à bien le calcul pour de très grandes valeurs de $n$. Contrairement à de nombreux autres langages de programmation, il n'y a pas de limite (sauf la mémoire et le temps...) sur la taille des entiers que l'on peut manipuler en Python. Le résultat est donc a priori juste même pour de très grandes valeurs de $n$. On se servira par la suite de cette fonction comme \"étalon\" pour vérifier la justesse des résultats."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Passage par les nombres flottants\n",
+    "\n",
+    "Avant de pouvoir implémenter une fonction de calcul de la suite de Fibonacci à l’aide des nombres flottants, nous nous dotons de plusieurs fonctions calculant la puissance entière d’un nombre flottant.\n",
+    "\n",
+    "### Calcul de puissances\n",
+    "\n",
+    "On souhaite écrire une fonction calculant une valeur proche de $a^n$ pour un nombre réel $a$ et un nombre entier positif $n$ donnés. Pour cela, on se munit des définitions suivantes de $a^n$ :\n",
+    "\n",
+    "- Définition 1 : \n",
+    "\n",
+    "  $a^n=\\begin{cases}\n",
+    "    a*a^{n-1} & \\mbox{ si $n>0$},\\\\\n",
+    "    1 & \\mbox{ si $n=0$}.\n",
+    "  \\end{cases}$\n",
+    "\n",
+    "- Définition 2 (où $\\lfloor x \\rfloor$ désigne la partie entière de $x$) : \n",
+    "\n",
+    "  $a^n=\\begin{cases}\n",
+    "    (a^{\\lfloor n/2\\rfloor})^2      & \\mbox{ si $n>0$ est pair},\\\\\n",
+    "    a*(a^{\\lfloor n/2\\rfloor})^2 & \\mbox{ si $n$ est impair},\\\\\n",
+    "    1 & \\mbox{ si $n=0$}.\n",
+    "  \\end{cases}$\n",
+    "\n",
+    "> **Question :** Programmez deux fonctions implémentant chacune de ces deux définitions, puis évaluez leur complexité asymptotique."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "2.0632052421569824\n",
+      "0.22155094146728516\n",
+      "0.06339001655578613\n"
+     ]
+    }
+   ],
+   "source": [
+    "def puissance_lente(a, n):\n",
+    "    res = 1\n",
+    "    for i in range(n):\n",
+    "        res = a * res\n",
+    "    return res\n",
+    "\n",
+    "def puissance_rapide(a, n):\n",
+    "    if n == 0:\n",
+    "        return 1\n",
+    "    if n % 2 == 0:\n",
+    "        return puissance_rapide(a * a, n // 2)\n",
+    "    return a * puissance_rapide(a * a, n // 2)\n",
+    "\n",
+    "from sys import setrecursionlimit\n",
+    "setrecursionlimit(100000)\n",
+    "\n",
+    "debut = time()\n",
+    "puissance_lente(34523, 90000)\n",
+    "print(time() - debut)\n",
+    "\n",
+    "debut = time()\n",
+    "puissance_rapide(34523, 90000)\n",
+    "print(time() - debut)\n",
+    "\n",
+    "debut = time()\n",
+    "34523 ** 90000\n",
+    "print(time() - debut)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Fibonacci par les flottants\n",
+    "\n",
+    "On peut donner une expression *fonctionnelle* du terme $f_n$ (c’est-à-dire non récursive mais dépendant uniquement de $n$) par une analyse mathématique de la suite. En résolvant le polynôme caractéristique de cette suite (récurrente d’ordre 2), on peut déterminer que ses termes sont de la forme \n",
+    "\n",
+    "$f_n = \\frac{1}{\\sqrt{5}} (\\varphi^n - {\\varphi'}^n) \\qquad \\text{ avec } \\varphi = \\frac{1 + \\sqrt{5}}{2} \\text{ et } \\varphi' = \\frac{1 - \\sqrt{5}}{2}.$\n",
+    "  \n",
+    "(Vous avez reconnu $\\varphi$, le *nombre d’or*.)\n",
+    "\n",
+    "Comme $\\varphi^n$ tend vers $+\\infty$ et $\\varphi'^n$ vers 0 quand $n$ tend vers $+\\infty$, le second terme de cette expression devient négligeable à partir d’un certain rang (en fait dès $n = 1$), et on peut calculer $f_n$ simplement en arrondissant $\\frac{1}{\\sqrt{5}} \\varphi^n$ à l’entier le plus proche. Cela nous fournit un nouveau moyen pour calculer $f_n$ efficacement.\n",
+    "\n",
+    "> **Question :** Implémentez deux versions de cet algorithme, l'une utilisant la fonction `puissance_lente`, la seconde `puissance_rapide`. Quelle est d'après vous leur complexité algorithmique ? D'après vous, ces fonctions présentent-elles toutes les deux un gain en efficacité par rapport à la fonction `fibo_iter` ?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "55\n",
+      "6765\n",
+      "832040\n"
+     ]
+    }
+   ],
+   "source": [
+    "from math import sqrt\n",
+    "phi = (1 + sqrt(5)) / 2\n",
+    "sqrt5 = sqrt(5)\n",
+    "\n",
+    "def fibo_phi_lent(n):\n",
+    "    return round(puissance_lente(phi, n) / sqrt5)\n",
+    "\n",
+    "print(fibo_phi_lent(10))\n",
+    "print(fibo_phi_lent(20))\n",
+    "print(fibo_phi_lent(30))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "55\n",
+      "6765\n",
+      "832040\n"
+     ]
+    }
+   ],
+   "source": [
+    "def fibo_phi_rapide(n):\n",
+    "    return round(puissance_rapide(phi, n) / sqrt5)\n",
+    "\n",
+    "print(fibo_phi_rapide(10))\n",
+    "print(fibo_phi_rapide(20))\n",
+    "print(fibo_phi_rapide(30))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Tout a l'air de bien se passer, mais nous n'avons pas encore une idée claire des différences d'efficacité entre ces deux fonctions. Pour tenter d'y voir plus clair, calculons les résultats obtenus pour des valeurs plus grandes de $n$.\n",
+    "\n",
+    "> **Question :** Calculez à l'aide de ces deux fonctions, ainsi qu'avec la fonction `fibo_iter`, le terme $f_{10\\,000}$. Quel problème constatez-vous ? À quel rang $n$ ce problème apparait-il ?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "33644764876431783266621612005107543310302148460680063906564769974680081442166662368155595513633734025582065332680836159373734790483865268263040892463056431887354544369559827491606602099884183933864652731300088830269235673613135117579297437854413752130520504347701602264758318906527890855154366159582987279682987510631200575428783453215515103870818298969791613127856265033195487140214287532698187962046936097879900350962302291026368131493195275630227837628441540360584402572114334961180023091208287046088923962328835461505776583271252546093591128203925285393434620904245248929403901706233888991085841065183173360437470737908552631764325733993712871937587746897479926305837065742830161637408969178426378624212835258112820516370298089332099905707920064367426202389783111470054074998459250360633560933883831923386783056136435351892133279732908133732642652633989763922723407882928177953580570993691049175470808931841056146322338217465637321248226383092103297701648054726243842374862411453093812206564914032751086643394517512161526545361333111314042436854805106765843493523836959653428071768775328348234345557366719731392746273629108210679280784718035329131176778924659089938635459327894523777674406192240337638674004021330343297496902028328145933418826817683893072003634795623117103101291953169794607632737589253530772552375943788434504067715555779056450443016640119462580972216729758615026968443146952034614932291105970676243268515992834709891284706740862008587135016260312071903172086094081298321581077282076353186624611278245537208532365305775956430072517744315051539600905168603220349163222640885248852433158051534849622434848299380905070483482449327453732624567755879089187190803662058009594743150052402532709746995318770724376825907419939632265984147498193609285223945039707165443156421328157688908058783183404917434556270520223564846495196112460268313970975069382648706613264507665074611512677522748621598642530711298441182622661057163515069260029861704945425047491378115154139941550671256271197133252763631939606902895650288268608362241082050562430701794976171121233066073310059947366875\n"
+     ]
+    },
+    {
+     "ename": "OverflowError",
+     "evalue": "cannot convert float infinity to integer",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[1;31mOverflowError\u001b[0m                             Traceback (most recent call last)",
+      "\u001b[1;32m<ipython-input-13-9ece55726292>\u001b[0m in \u001b[0;36m<module>\u001b[1;34m()\u001b[0m\n\u001b[0;32m      1\u001b[0m \u001b[1;32mfor\u001b[0m \u001b[0mfun\u001b[0m \u001b[1;32min\u001b[0m \u001b[1;33m[\u001b[0m\u001b[0mfibo_iter\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mfibo_phi_lent\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mfibo_phi_rapide\u001b[0m\u001b[1;33m]\u001b[0m\u001b[1;33m:\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[1;32m----> 2\u001b[1;33m     \u001b[0mprint\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mfun\u001b[0m\u001b[1;33m(\u001b[0m\u001b[1;36m10000\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0m",
+      "\u001b[1;32m<ipython-input-11-c84c0aae6608>\u001b[0m in \u001b[0;36mfibo_phi_lent\u001b[1;34m(n)\u001b[0m\n\u001b[0;32m      4\u001b[0m \u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m      5\u001b[0m \u001b[1;32mdef\u001b[0m \u001b[0mfibo_phi_lent\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mn\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m:\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[1;32m----> 6\u001b[1;33m     \u001b[1;32mreturn\u001b[0m \u001b[0mround\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mpuissance_lente\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mphi\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mn\u001b[0m\u001b[1;33m)\u001b[0m \u001b[1;33m/\u001b[0m \u001b[0msqrt5\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0m\u001b[0;32m      7\u001b[0m \u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m      8\u001b[0m \u001b[0mprint\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mfibo_phi_lent\u001b[0m\u001b[1;33m(\u001b[0m\u001b[1;36m10\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n",
+      "\u001b[1;31mOverflowError\u001b[0m: cannot convert float infinity to integer"
+     ]
+    }
+   ],
+   "source": [
+    "for fun in [fibo_iter, fibo_phi_lent, fibo_phi_rapide]:\n",
+    "    print(fun(10000))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** Calculez à l'aide de ces deux fonctions, ainsi qu'avec la fonction `fibo_iter`, le terme $f_{100}$. Quel problème constatez-vous ? À quel rang $n$ ce problème apparait-il ?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "354224848179261915075\n",
+      "354224848179262980096\n",
+      "354224848179261800448\n"
+     ]
+    }
+   ],
+   "source": [
+    "for fun in [fibo_iter, fibo_phi_lent, fibo_phi_rapide]:\n",
+    "    print(fun(100))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Passage par le calcul matriciel\n",
+    "\n",
+    "On a vu que le passage par les nombres flottants, malgré une performance très bonne, posait d’autres problèmes. Comment faire pour calculer $f_n$ avec précision pour une grande valeur de $n$ ?\n",
+    "\n",
+    "La définition de la suite de Fibonacci peut se reformuler selon l'équation matricielle suivante pour $n \\geq 2$ :\n",
+    "\n",
+    "$$\\left(\\begin{array}{c}f_{n}\\\\f_{n-1}\\end{array} \\right) = \n",
+    "  \\left(\\begin{array}[c]{cc}\n",
+    "      1 & 1\\\\\n",
+    "      1 & 0\n",
+    "    \\end{array}\\right) \\times\n",
+    "  \\left(\\begin{array}{c}f_{n-1}\\\\f_{n-2}\\end{array} \\right)\n",
+    "$$\n",
+    "\n",
+    "où on a bien sûr toujours $f_0 = 0$ et $f_1 = 1$. On peut facilement en déduire l’égalité suivante (toujours pour $n \\geq 2$) : \n",
+    "\n",
+    "$$\n",
+    "\\left(\\begin{array}[c]{cc}\n",
+    "      1 & 1\\\\\n",
+    "      1 & 0\n",
+    "    \\end{array}\\right)^{n-1}\n",
+    "  =\\ \\  \n",
+    "  \\left(\\begin{array}[c]{cc}\n",
+    "      f_n & f_{n-1}\\\\\n",
+    "      f_{n-1} & f_{n-2}\n",
+    "    \\end{array}\\right)$$\n",
+    "\n",
+    "En Python, manipuler une matrice peut se faire à l'aide de listes imbriquées (ou listes de listes). Par exemple, la matrice ci-dessus peut s'écrire `[[1,1],[1,0]]`. D'autre part, pour récupérer ou modifier la valeur de l'élément $(i, j)$ (ligne $i$, colonne $j$) de la matrice, on écrira : `m[i][j]` (`j`-ème élément de la `i`-ème liste).\n",
+    "\n",
+    "La fonction ci-dessous (qui vous est donnée) calcule la matrice produit de deux matrices carrées de dimension 2."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[[2, 1], [1, 1]]\n",
+      "[[3, 2], [2, 1]]\n"
+     ]
+    }
+   ],
+   "source": [
+    "def produit_2x2(m1, m2):\n",
+    "    return [[m1[0][0] * m2[0][0] + m1[0][1] * m2[1][0], \n",
+    "             m1[0][0] * m2[0][1] + m1[0][1] * m2[1][1]],\n",
+    "            [m1[1][0] * m2[0][0] + m1[1][1] * m2[1][0], \n",
+    "             m1[1][0] * m2[0][1] + m1[1][1] * m2[1][1]]]\n",
+    "\n",
+    "print(produit_2x2([[1,1],[1,0]],[[1,1],[1,0]]))\n",
+    "print(produit_2x2([[2,1],[1,1]],[[1,1],[1,0]]))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** À l’aide de cette fonction, écrivez une fonction calculant la puissance $n$-ème *rapide* de la matrice $2 \\times 2$ . *On rappelle que* :\n",
+    "\n",
+    "$$\n",
+    "\\left(\n",
+    "    \\begin{array}[c]{cc}\n",
+    "      a & b\\\\\n",
+    "      c & d\n",
+    "    \\end{array}\n",
+    "\\right)^0\n",
+    "=\\ \n",
+    "  \\left(\n",
+    "    \\begin{array}[c]{cc}\n",
+    "      1 & 0\\\\\n",
+    "      0 & 1\n",
+    "    \\end{array}\n",
+    "  \\right).\n",
+    "$$"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "def puissance_2x2(mat, n):\n",
+    "    if n == 0:\n",
+    "        return [[1, 0], [0, 1]]\n",
+    "    if n % 2 == 0:\n",
+    "        return puissance_2x2(produit_2x2(mat, mat), n // 2)\n",
+    "    return produit_2x2(mat, puissance_2x2(produit_2x2(mat, mat), n // 2))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** À l’aide de cette fonction, écrivez une fonction calculant $f_n$."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "def fibo_mat(n):\n",
+    "    if n < 2:\n",
+    "        return n\n",
+    "    return puissance_2x2([[1, 1], [1, 0]], n - 1)[0][0]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** Comparez les résultats et les performances de cette fonction avec les précédentes. À partir de quel rang la fonction est-elle plus rapide que la fonction `fibo_iter` ?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "*Pour bien répondre à cette question, sortons l'artillerie lourde...*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Populating the interactive namespace from numpy and matplotlib\n"
+     ]
+    },
+    {
+     "data": {
+      "image/png": "iVBORw0KGgoAAAANSUhEUgAAAYsAAAEACAYAAABCl1qQAAAABHNCSVQICAgIfAhkiAAAAAlwSFlz\nAAALEgAACxIB0t1+/AAAIABJREFUeJzsnXd4VEXXwH+zqZAeSIMUQi+i9CLFoCKICiiKoiJFRVGs\nqK98VkTF7msHEQFFFLCBIGLhBRGBUEOQJCQhvfe+STY73x93s6ZnA2nA/J5nn+ydO+1elnvuOWfm\nHCGlRKFQKBSKhtC19QQUCoVC0f5RwkKhUCgUjaKEhUKhUCgaRQkLhUKhUDSKEhYKhUKhaBQlLBQK\nhULRKI0KCyHEZCFEuBAiUgjxn3rqvG86HyKEGNxYWyGEuxDiNyHEaSHEr0IIV1N5NyFEiRDimOnz\ncXNcpEKhUCjOjQaFhRDCCvgQmAz0B2YJIfrVqDMF6Cml7AUsAD6xoO3TwG9Syt7AH6bjSqKklINN\nnwfO9QIVCoVCce40plmMQHt4x0opy4FvgGk16kwF1gFIKQ8CrkII70bamtuY/k4/5ytRKBQKRYvR\nmLDoCiRUOU40lVlSp0sDbb2klGmm72mAV5V6gUKIo0KI3UKIsY1fgkKhUChaGutGzlsaC0RYWKdW\nf1JKKYSoLE8G/KSUOUKIIcCPQogBUsoCC+ehUCgUihagMWGRBPhVOfZD0xAaquNrqmNTR3mS6Xua\nEMJbSpkqhPAB0gGklGVAmen7USFENNALOFp1wCrCRaFQKBRNQEppyct9LRozQx0GeplWKdkCtwJb\na9TZCtwFIIQYBeSaTEwNtd0KzDF9nwP8aGrf2eQYRwjRHU1QnKlrYlLKdv954YUX2nwOap5qjmqe\nap6Vn3OhQc1CSmkQQiwCdgJWwGopZZgQ4j7T+ZVSyp+FEFOEEFFAETCvobamrl8DNgkh7gZigZmm\n8vHAS0KIcsAI3CelzD2nK1QoFArFOdOYGQop5Q5gR42ylTWOF1na1lSeDVxdR/n3wPeNzUmhUCgU\nrYvawd2CBAUFtfUULELNs/k4H+YIap7Nzfkyz3NBnKsdqy0QQsjzcd4KhULRlgghkGfp4G7UDHU+\nIcRZ3QPFRYB6uVAozo0LSliAeigoaqNeIhSKc0f5LBQKhULRKEpYKBQKhaJRlLBQKBQKRaMoYdFK\nREREMGjQIJydnbGysuKVV14BYPfu3fj5+TXSunkJCgpi9erVdZ6Lj4/Hycmp1X0/Cxcu5OWXX673\nvE6n48yZOjfzKxSKVuCCc3C3V9544w2uuuoqjh8/3tZTQQhRr9PX39+fgoLWj9v4ySeftPqYCoXC\ncpRm0UrExcXRv3//tp5Gi9AccWcUCkX7RgmLVuDKK69k9+7dLFq0CCcnJ+644w6ee+65anWWL1+O\nh4cHgYGBbNiwwVyel5fHXXfdhaenJ926deOVV15p9MG8du1axowZw0MPPYSrqyv9+vVj165d1erE\nxsYyduxYnJ2dmTRpEllZWeZynU6H0WhscIygoCCeffZZxowZg4ODA2fOnGHNmjX0798fZ2dnevTo\nwaeffmquv3v3bnx9feu9zrlz51a7J2+++SZdunTB19eXzz//vNrYpaWlPPHEEwQEBODt7c3ChQvR\n6/UNzlehUJwbSli0Art27WLcuHF89NFHFBQUYGtrW80MlJqaSlZWFsnJyaxbt44FCxZw+vRpAB56\n6CEKCgqIiYlhz549fPHFF6xZs6bRMYODg+nZsydZWVksXbqUm266idxcLSajlJINGzawdu1a0tPT\nKSsr46233mryda1fv57PPvuMwsJCAgIC8PLyYvv27eTn57NmzRoee+wxjh07Zq6flpZW6zojIyOB\n6qaxX375hbfffpvff/+d06dP8/vvv1cb9+mnnyYqKoqQkBCioqJISkripZdeavL8FQqF5VxUwkKI\n5vk0BzW1g2XLlmFjY8P48eO57rrr2LRpExUVFWzcuJHly5fj4OBAQEAAixcv5ssvv2y0f09PTx55\n5BGsrKyYOXMmffr0Ydu2bab7IJg/fz49e/bE3t6emTNnNtmXIoRg7ty59OvXD51Oh7W1NVOmTCEw\nMBCA8ePHc80117B3794Gr3Pjxo21+t60aRPz58+nf//+dOzYkaVLl1a7b6tWreKdd97B1dUVR0dH\nlixZwjfffNOk+SsU7YHPU1J4JyGh8YrtgIvKwd1ezepubm506NDBfBwQEEBKSgpZWVmUl5cTEBBg\nPufv709SUlJd3VSja9fq2W8r+6zE29vb/L1Dhw4UFhY2ed41V3Ht2LGDpUuXEhkZidFopLi4mEsv\nvdR8vr7rrElKSgrDhw83H/v7+5u/Z2RkUFxczNChQ81lUspGzWYKRXsjQa/n0agoutvb83grr4g8\nGy4qzaI9UdUMlZOTQ3Fxsfk4Li6OLl260LlzZ2xsbIiNjTWfi4+Px9fXt9H+awqUyj6bk6rXUFpa\n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\n",
+      "text/plain": [
+       "<matplotlib.figure.Figure at 0x7f3cc01406a0>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "del sqrt\n",
+    "%pylab inline\n",
+    "from matplotlib import pyplot as plt\n",
+    "from numpy import arange\n",
+    "from timeit import repeat as rep\n",
+    "\n",
+    "taille = 800\n",
+    "nb_points = 200\n",
+    "nb_iter = 10\n",
+    "nb_rep = 10\n",
+    "fun_lst = [#fibo_rec,\n",
+    "           fibo_phi_lent,\n",
+    "           fibo_phi_rapide,\n",
+    "           fibo_mat,\n",
+    "           fibo_iter]\n",
+    "tmax = fibo_iter(taille)\n",
+    "temps = {fun: [] for fun in fun_lst}\n",
+    "\n",
+    "for fun in fun_lst:\n",
+    "    for i in range(0, taille, taille//nb_points):\n",
+    "        fun2 = lambda: fun(i)\n",
+    "        if True: # remplacer par `if fun2() == fibo_iter(i):` pour mettre à 0 les résultats faux\n",
+    "            temps[fun].append(\n",
+    "                min(rep(fun2, number=nb_iter, repeat=nb_rep))\n",
+    "            )\n",
+    "        else:\n",
+    "            temps[fun].append(0)\n",
+    "            \n",
+    "x = arange(0, taille, taille//nb_points)\n",
+    "for fun in temps:\n",
+    "    plt.plot(x, temps[fun], label=fun.__name__)\n",
+    "plt.legend(loc='upper left')\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Question :** Exprimez la complexité asymptotique de cette fonction. Comment expliquez-vous que ses performances en pratique soient à ce point pires que toutes les autres fonctions ?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "La fonction `fibo_mat` est de complexité logarithmique (tout comme le produit rapide de matrice). Cependant, il existe une constante multiplicative assez importante (la fonction réalise de nombreuses opérations en plus de l'appel récursif). C'est pourquoi ses performances sont moins bonnes pour des valeurs de $n$ relativement petites. Par contre, il s'agit de la seule fonction parmi celles étudiées qui permette de calculer en un temps raisonnable des résultats corrects pour de très grandes valeurs de $n$ :"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "temps de calcul : 3.620612144470215 s\n",
+      "626963 chiffres en base 10\n"
+     ]
+    }
+   ],
+   "source": [
+    "from math import log, ceil\n",
+    "debut = time()\n",
+    "n = 3000000 # trois millions\n",
+    "res = fibo_mat(n)\n",
+    "print(\"temps de calcul :\", time()-debut, \"s\")\n",
+    "print(ceil(log(res, 10)), \"chiffres en base 10\")"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.4.3+"
+  },
+  "name": "fibonacci_corrige.ipynb"
+ },
+ "nbformat": 4,
+ "nbformat_minor": 0
+}
